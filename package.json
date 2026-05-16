@@ -1,0 +1,37 @@
+{
+  "name": "arxiv-search-cli",
+  "version": "0.1.0",
+  "description": "arXiv Search CLI — query the official arXiv API, extract paper metadata, download PDFs, with history/cache and agent skill support.",
+  "type": "module",
+  "bin": {
+    "arxiv": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "prepare": "npm run build",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.4.3",
+    "commander": "^12.1.0",
+    "fs-extra": "^11.3.5",
+    "picocolors": "^1.1.1",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
+  }
+}
