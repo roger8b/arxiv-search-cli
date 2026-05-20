@@ -6,9 +6,15 @@ import path from 'node:path';
 import pc from 'picocolors';
 import { fetchBinary } from '../arxiv/client.js';
 import { normalizeArxivId } from '../arxiv/query.js';
+import { runConvert } from './convert.js';
 
 export interface DownloadOpts {
   out?: string;
+  convert?: boolean;
+  to?: string;
+  device?: string;
+  yes?: boolean;
+  noInstall?: boolean;
 }
 
 export async function runDownload(rawId: string | undefined, opts: DownloadOpts = {}): Promise<number> {
@@ -49,5 +55,21 @@ export async function runDownload(rawId: string | undefined, opts: DownloadOpts 
 
   console.error(pc.green(`✓ saved ${(data.length / 1024).toFixed(0)} KB`));
   process.stdout.write(outFile + '\n');
+
+  if (opts.convert) {
+    const code = await runConvert(outFile, {
+      out: outDir,
+      to: opts.to,
+      device: opts.device,
+      yes: opts.yes,
+      noInstall: opts.noInstall,
+      id,
+    });
+    if (code !== 0) {
+      console.error(pc.yellow('[arxiv] WARN: PDF saved but conversion failed'));
+      return 0;
+    }
+  }
+
   return 0;
 }

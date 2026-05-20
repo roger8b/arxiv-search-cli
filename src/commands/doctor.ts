@@ -8,6 +8,7 @@ import pc from 'picocolors';
 import { ARXIV_HOME, DEFAULT_CONFIG } from '../config/index.js';
 import { fetchText } from '../arxiv/client.js';
 import { VERSION } from '../utils/version.js';
+import { detectDocling, installHint } from '../utils/docling.js';
 
 interface Check {
   label: string;
@@ -69,6 +70,17 @@ export async function runDoctor(): Promise<number> {
     apiDetail = `${DEFAULT_CONFIG.apiBase} (unreachable: ${(e as Error).message})`;
   }
   checks.push({ label: 'arXiv API', ok: apiOk, fatal: false, detail: apiDetail });
+
+  // docling (optional — `arxiv convert` will offer to auto-install)
+  const docling = detectDocling();
+  checks.push({
+    label: 'docling',
+    ok: docling.installed,
+    fatal: false,
+    detail: docling.installed
+      ? `${docling.bin}${docling.version ? ` (${docling.version})` : ''}`
+      : `not installed — install: ${installHint()} (or run \`arxiv convert\` to auto-install)`,
+  });
 
   console.error(pc.cyan('▸ arxiv doctor'));
   console.error('');

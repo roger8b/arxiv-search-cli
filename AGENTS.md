@@ -9,13 +9,13 @@ This file is the canonical instruction set for any AI coding agent (Codex, Claud
 ```
 src/
 ├── cli/             # Commander option definitions (options.ts)
-├── commands/        # one file per subcommand (search, download, setup, doctor, init, uninstall)
+├── commands/        # one file per subcommand (search, download, convert, setup, doctor, init, uninstall)
 ├── arxiv/           # client (HTTP), query (URL builder), parser (XML → papers)
 ├── search/          # search orchestration (performSearch)
 ├── history/         # JSONL append + cache lookup
 ├── emitter/         # output payload shaping (json / ndjson / text)
 ├── config/          # env + defaults
-├── utils/           # version, agents registry, templates-dir
+├── utils/           # version, agents registry, templates-dir, docling wrapper
 └── index.ts         # Commander root + dispatcher
 templates/skills/    # arxiv-* skills copied by `arxiv init`
 tests/               # vitest
@@ -52,8 +52,14 @@ tests/               # vitest
 
 ### Paths
 
-- User data lives under `ARXIV_HOME` (default `~/.arxiv`): `history/searches.jsonl`. Never assume the install dir is writable for user data.
+- User data lives under `ARXIV_HOME` (default `~/.arxiv`): `history/searches.jsonl`, `cache/conversions.jsonl`. Never assume the install dir is writable for user data.
 - Always resolve user-provided paths absolutely; never hard-code home.
+
+### External tool integrations
+
+- `convert` shells out to the `docling` Python CLI. The wrapper in `src/utils/docling.ts` handles PATH detection, version probing, auto-install (uv > pipx > pip), and a JSONL conversion cache.
+- Never assume `docling` is on PATH — call `detectDocling()` first and surface `installHint()` on failure. Allow the user to skip auto-install via `--no-install`.
+- The `--version` flag *does* work for docling (unlike marker), so version detection is cheap; calling the binary for actual conversion is heavy (PyTorch cold-start ~5s + ~30s/page).
 
 ### Error handling
 
@@ -84,7 +90,7 @@ tests/               # vitest
 
 ## Hard rules
 
-- Never edit `~/.arxiv/history/searches.jsonl` by hand; it is append-only and `--use-cache` depends on its ordering.
+- Never edit `~/.arxiv/history/searches.jsonl` or `~/.arxiv/cache/conversions.jsonl` by hand; both are append-only.
 - Never call `process.exit` from inside a command handler — return the code.
 - Never colorize stdout. Stdout is the machine payload.
 - Exit code 3 = no results; it is a normal outcome, not a failure to retry blindly.

@@ -9,6 +9,7 @@ import pc from 'picocolors';
 import { runSetup } from './commands/setup.js';
 import { runSearch } from './commands/search.js';
 import { runDownload } from './commands/download.js';
+import { runConvert } from './commands/convert.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runUninstall } from './commands/uninstall.js';
@@ -16,7 +17,7 @@ import { applySearchOptions, optsToConfig, SEARCH_OPTIONS } from './cli/options.
 import { VERSION } from './utils/version.js';
 
 const KNOWN_COMMANDS = new Set([
-  'setup', 'init', 'uninstall', 'doctor', 'search', 'download', 'help',
+  'setup', 'init', 'uninstall', 'doctor', 'search', 'download', 'convert', 'help',
 ]);
 
 function printRootHelp(): void {
@@ -26,6 +27,7 @@ arxiv ${VERSION} — arXiv Search CLI
 Usage:
   arxiv [search] <query> [options]   Search arXiv papers (default command)
   arxiv download <id> [--out dir]    Download a paper PDF by arXiv ID
+  arxiv convert <file> [--out dir]   Convert a PDF/doc to markdown via docling
   arxiv setup                        Provision data dir + check API reachability
   arxiv init [options]               Wire arxiv into the current project
   arxiv uninstall [options]          Reverse of init
@@ -34,7 +36,8 @@ Usage:
 
 Commands:
   search      Query the official arXiv API, return structured JSON/text
-  download    Fetch a paper PDF by arXiv ID
+  download    Fetch a paper PDF by arXiv ID (--convert chains markdown conversion)
+  convert     Convert a local PDF to markdown (auto-installs docling if missing)
   setup       One-time data dir provisioning (arXiv is public — no API key)
   init        Detects CLAUDE.md / AGENTS.md / GEMINI.md and installs skills
   uninstall   Removes the rules section and arxiv-* skills
@@ -130,8 +133,27 @@ async function dispatch(rawArgv: string[]): Promise<number> {
     .command('download <id>')
     .description('Download a paper PDF by arXiv ID')
     .option('--out <dir>', 'Output directory (default: cwd)')
-    .action(async (id: string, opts: { out?: string }) => {
-      process.exitCode = await runDownload(id, opts);
+    .option('-c, --convert', 'After downloading, convert PDF to markdown via docling')
+    .option('--to <md|json|html|text|doctags>', 'Convert output format (default: md)')
+    .option('--device <cpu|cuda|mps|auto>', 'Docling compute device')
+    .option('--no-install', 'Do not auto-install docling if missing')
+    .option('-y, --yes', 'Skip install confirmation prompt')
+    .action(async (id: string, opts: { out?: string; convert?: boolean; to?: string; device?: string; install?: boolean; yes?: boolean }) => {
+      process.exitCode = await runDownload(id, { ...opts, noInstall: opts.install === false });
+    });
+
+  program
+    .command('convert <input>')
+    .description('Convert a local PDF/doc to markdown via docling')
+    .option('--out <dir>', 'Output directory (default: file directory)')
+    .option('--to <md|json|html|text|doctags>', 'Output format (default: md)')
+    .option('--image-mode <embedded|referenced|placeholder>', 'How to handle images (default: referenced)')
+    .option('--device <cpu|cuda|mps|auto>', 'Compute device')
+    .option('--force', 'Re-run even if a cached conversion exists')
+    .option('--no-install', 'Do not auto-install docling if missing')
+    .option('-y, --yes', 'Skip install confirmation prompt')
+    .action(async (input: string, opts: { out?: string; to?: string; imageMode?: 'embedded' | 'referenced' | 'placeholder'; device?: string; force?: boolean; install?: boolean; yes?: boolean }) => {
+      process.exitCode = await runConvert(input, { ...opts, noInstall: opts.install === false });
     });
 
   const searchCmd = program
