@@ -49,6 +49,16 @@ arxiv download 2401.12345 --out ./papers
 
 Accepts a bare ID, an abs/pdf URL, or a versioned ID (`2401.12345v2`). Prints the saved file path to stdout.
 
+### Download + convert to Markdown in one shot
+
+When the user wants the paper as Markdown (e.g. to summarise, quote, or ingest into a knowledge base), chain conversion via `-c, --convert`:
+
+```bash
+arxiv download 2305.16291 --out ./papers -c --device mps -y
+```
+
+Backed by [`docling`](https://github.com/docling-project/docling). The CLI auto-installs docling on first use (`-y` skips the prompt). For converting an existing PDF, see the **arxiv-convert** skill.
+
 ## Quick recipes
 
 ```bash
@@ -63,6 +73,9 @@ arxiv --author "Geoffrey Hinton" --max-results 20 --format ndjson
 
 # Reuse a recent query (no API call)
 arxiv "transformers" --use-cache
+
+# Download + convert to Markdown (Apple Silicon GPU)
+arxiv download 2305.16291 --out ./papers -c --device mps -y
 
 # Health check when something feels off
 arxiv doctor
